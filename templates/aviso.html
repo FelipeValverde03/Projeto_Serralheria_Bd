@@ -1,0 +1,24 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviso!!!</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='aviso.css') }}">
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <a href="/orcamento"><button>➕ Registrar Outro Orçamento</button></a>
+    <a href="/"><button>🏠 Voltar ao Menu</button></a>
+</body>
+</html>

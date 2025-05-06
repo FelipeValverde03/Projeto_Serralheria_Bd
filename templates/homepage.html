@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Registro</title>
+</head>
+<body>
+    <h1>Bem-vindo ao Sistema da Serralheria</h1>
+
+    <h2>Escolher uma tabela para registrar dados:</h2>
+    <form action="/selecionar_tabela" method="POST">
+        <label for="tabela">Selecione a Tabela:</label>
+        <select name="tabela" id="tabela" required>
+            <option value="orcamento">Orçamento</option>
+            <option value="funcionario">Funcionários</option>
+        </select>
+        <button type="submit">Acessar</button>
+    </form>
+
+    <hr>
+
+    <h2>Orçamentos Abertos</h2>
+    {% if orcamentos %}
+        <ul>
+        {% for o in orcamentos %}
+            <li>
+                <strong>ID:</strong> {{ o[0] }} |
+                <strong>Cliente:</strong> {{ o[1] }} |
+                <strong>Valor:</strong> R$ {{ o[2] }} |
+                <strong>Data:</strong> {{ o[3] }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum orçamento aberto no momento.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Controle de Ponto dos Funcionários</h2>
+    <form action="/ponto" method="GET">
+        <button type="submit">Acessar Ponto</button>
+    </form>
+</body>
+</html>
