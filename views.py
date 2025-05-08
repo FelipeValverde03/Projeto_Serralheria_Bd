@@ -15,10 +15,13 @@ def homepage():
         ORDER BY data DESC
     """)
     orcamentos_abertos = cur.fetchall()
+    
+    cur.execute("""SELECT data_hora, mensagem FROM auditoria ORDER BY data_hora DESC LIMIT 10""")
+    registro_auditoria = cur.fetchall()
 
     cur.close()
     conn.close()
-    return render_template("homepage.html",orcamentos = orcamentos_abertos)
+    return render_template("homepage.html",orcamentos = orcamentos_abertos, registro_auditoria=registro_auditoria)
 
 @app.route('/selecionar_tabela', methods=['POST'])
 def selecionar_tabela():
@@ -51,6 +54,12 @@ def orcamento():
         #Conecta ao Bd
         conn = connect_db()
         cur = conn.cursor()
+        
+        #Salvando os clientes no registro de auditoria
+        mensagem_cliente = f"Cliente {nome_cliente} adicionado"
+        mensagem_orcamento = f"Orçamento de R$ {valor} para {nome_cliente} adicionado"
+
+        cur.execute("INSERT INTO auditoria (mensagem) VALUES (%s)", (mensagem_orcamento,))
 
         #Add valores ao Bd Orcamentos
         cur.execute("""INSERT INTO orcamento(
@@ -71,11 +80,12 @@ def orcamento():
             cliente_existente = cur.fetchone()
 
             if cliente_existente:
-                flash("⚠️ Cliente com este CPF já está registrado!", "warning")
+                flash("⚠️ Cliente com este documento já está registrado!", "warning")
             else:
                 cur.execute("""INSERT INTO cliente (nome_cliente, cpf_cnpj, cep, telefone, endereco)
                             VALUES (%s, %s, %s, %s, %s)
                             """, (nome_cliente, cpf_cnpj, cep, telefone, endereco))
+                cur.execute("INSERT INTO auditoria (mensagem) VALUES (%s)", (mensagem_cliente,))
                 conn.commit()
                 flash("✅ Cliente registrado com sucesso!", "success")
         else: pass

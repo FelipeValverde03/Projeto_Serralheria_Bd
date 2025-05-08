@@ -36,12 +36,22 @@
     {% else %}
         <p>Nenhum orçamento aberto no momento.</p>
     {% endif %}
-
+    
+    <!--
     <hr>
 
     <h2>Controle de Ponto dos Funcionários</h2>
     <form action="/ponto" method="GET">
         <button type="submit">Acessar Ponto</button>
     </form>
+    -->
+    <hr>
+
+    <h2>Registro de Auditoria</h2>
+    <ul>
+    {% for data_hora, mensagem in registro_auditoria %}
+        <li>{{ data_hora.strftime('%d/%m/%Y %H:%M') }} - {{ mensagem }}</li>
+    {% endfor %}
+    </ul>
 </body>
 </html>
