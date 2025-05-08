@@ -37,7 +37,7 @@ def orcamento():
     if request.method == 'POST':
         #Coletar os dados do formulário
         nome_cliente = request.form['nome_cliente'].strip().upper()
-        cpf = request.form['cpf'].strip()
+        cpf_cnpj = request.form['cpf_cnpj'].strip()
         cep = request.form['cep'].strip()
         telefone = request.form['telefone'].strip()
         status_cliente = request.form['status_cliente'].strip().capitalize()
@@ -54,11 +54,11 @@ def orcamento():
 
         #Add valores ao Bd Orcamentos
         cur.execute("""INSERT INTO orcamento(
-                nome_cliente, cpf, cep, telefone,
+                nome_cliente, cpf_cnpj, cep, telefone,
                 status_cliente, valor, forma_pagamento, data, cliente_novo, endereco
         )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",(
-                nome_cliente, cpf, cep, telefone,
+                nome_cliente, cpf_cnpj, cep, telefone,
                 status_cliente, valor, forma_pagamento, data, cliente_novo, endereco))
 
         conn.commit()
@@ -67,15 +67,15 @@ def orcamento():
         
         if salvar_cliente == True:
             #Add Cliente 
-            cur.execute("SELECT * FROM cliente WHERE cpf = %s", (cpf,))
+            cur.execute("SELECT * FROM cliente WHERE cpf_cnpj = %s", (cpf_cnpj,))
             cliente_existente = cur.fetchone()
 
             if cliente_existente:
                 flash("⚠️ Cliente com este CPF já está registrado!", "warning")
             else:
-                cur.execute("""INSERT INTO cliente (nome_cliente, cpf, cep, telefone, endereco)
+                cur.execute("""INSERT INTO cliente (nome_cliente, cpf_cnpj, cep, telefone, endereco)
                             VALUES (%s, %s, %s, %s, %s)
-                            """, (nome_cliente, cpf, cep, telefone, endereco))
+                            """, (nome_cliente, cpf_cnpj, cep, telefone, endereco))
                 conn.commit()
                 flash("✅ Cliente registrado com sucesso!", "success")
         else: pass
@@ -87,7 +87,7 @@ def orcamento():
         return redirect('/aviso')
 
     return render_template('orcamento.html')
-
+'''
 #Pagina registro Funcionario
 @app.route("/funcionario", methods=['GET', 'POST'])
 def funcionario():
@@ -118,7 +118,7 @@ def funcionario():
         return redirect('/')
     
     return render_template("funcionario.html")
-
+'''
 #Pagina do aviso
 @app.route("/aviso")
 def aviso():

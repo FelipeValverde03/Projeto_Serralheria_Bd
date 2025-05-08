@@ -1,6 +1,5 @@
-function validarCPF(cpf) {
+export function validarCPF(cpf) {
     cpf = cpf.replace(/[^\d]+/g, '');
-
     if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
     let soma = 0;
@@ -18,26 +17,3 @@ function validarCPF(cpf) {
 
     return resto === parseInt(cpf.charAt(10));
 }
-
-document.addEventListener("DOMContentLoaded", function () {
-    const cpfInput = document.getElementById("cpf");
-    const status = document.getElementById("cpf-status");
-
-    if (!cpfInput || !status) return;
-
-    cpfInput.addEventListener("input", function () {
-        const cpf = cpfInput.value;
-
-        if (cpf.length === 11) {
-            if (validarCPF(cpf)) {
-                status.textContent = "✅ CPF válido";
-                status.style.color = "green";
-            } else {
-                status.textContent = "❌ CPF inválido";
-                status.style.color = "red";
-            }
-        } else {
-            status.textContent = "";
-        }
-    });
-});
