@@ -61,6 +61,10 @@ def orcamento():
 
         cur.execute("INSERT INTO auditoria (mensagem) VALUES (%s)", (mensagem_orcamento,))
 
+        #Forma de Pagamento Outro
+        if forma_pagamento == "Outro":
+            forma_pagamento = request.form["outra_forma"]
+
         #Add valores ao Bd Orcamentos
         cur.execute("""INSERT INTO orcamento(
                 nome_cliente, cpf_cnpj, cep, telefone,

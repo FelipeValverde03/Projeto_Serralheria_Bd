@@ -50,9 +50,17 @@
         <label for="forma_pagamento">Forma de Pagamento:</label>
         <select name="forma_pagamento" id="forma_pagamento" required>
             <option value="Débito">Débito</option>
-            <option value="Crédito">Crédito</option>
-            <option value="Pix">Pix</option>
             <option value="Cheque">Cheque</option>
+            <option value="Crédito">Em espécie</option>
+            <option value="Pix">À vista no Pix</option>
+            <option value="2x Pix">À vista em 2x no Pix</option>
+            <option value="2x Credito">2x no Cartão de Crédito</option>
+            <option value="3x Credito">3x no Cartão de Crédito</option>
+            <option value="4x Credito">4x no Cartão de Crédito</option>
+            <option value="5x Credito">5x no Cartão de Crédito</option>
+            <option value="6x Credito">6x no Cartão de Crédito</option>
+            <option value="Outro">Outro</option>
+
         </select><br><br>
 
         <!-- Data -->
@@ -76,5 +84,6 @@
         <button type="submit">Registrar Orçamento</button>
     </form>
     <script type="module" src="{{ url_for('static', filename='js/validate_doc.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/outra_forma_pagamento.js') }}"></script>
 </body>
 </html>
