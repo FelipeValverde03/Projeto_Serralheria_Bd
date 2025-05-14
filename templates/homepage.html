@@ -25,11 +25,23 @@
     {% if orcamentos %}
         <ul>
         {% for o in orcamentos %}
-            <li>
+            <li class="orcamento" data-id="{{ o[0] }}">
                 <strong>ID:</strong> {{ o[0] }} |
                 <strong>Cliente:</strong> {{ o[1] }} |
                 <strong>Valor:</strong> R$ {{ o[2] }} |
-                <strong>Data:</strong> {{ o[3] }}
+                <strong>Data:</strong> {{ o[3] }} |
+                <strong>Telefone:</strong> {{ o[4] }} |
+                <button class="mudar-status-btn">Mudar status</button>
+                    <div class="status-options" style="display: none;">
+                        <select class="novo-status">
+                            <option value="">Selecione...</option>
+                            <option value="Fechado">Fechado</option>
+                            <option value="Negado">Negado</option>
+                            <option value="Cancelar">Cancelar</option>
+                        </select>
+                        <button class="confirmar-status">Confirmar</button>
+                    </div>
+                
             </li>
         {% endfor %}
         </ul>
@@ -37,14 +49,35 @@
         <p>Nenhum orçamento aberto no momento.</p>
     {% endif %}
     
-    <!--
     <hr>
+    
+    <h2>Obras em Andamento</h2>
+    {% if obras %}
+    <ul>
+    {% for obra in obras %}
+        <li class="obra" data-id="{{ obra[0] }}">
+            <strong>ID:</strong> {{ obra[0] }} |
+            <strong>Cliente:</strong> {{ obra[1] }} |
+            <strong>Valor:</strong> R$ {{ "%.2f"|format(obra[3])|replace(".", ",") }} |
+            <strong>Data Fechamento:</strong> {{ obra[2].strftime('%d/%m/%Y') }} |
+            <strong>Entrega estimada:</strong> 
+            {{ obra[4].strftime('%d/%m/%Y') }} | <!-- Data de entrega calculada no backend -->
+            <strong>Dias restantes:</strong>
+            <span class="{{ 'atrasado' if obra[5] < 0 else '' }}">
+                {% if obra[5] < 0 %}
+                    Atrasado: {{ -obra[5] }} dias
+                {% else %}
+                    {{ obra[5] }} dias
+                {% endif %}
+            </span>
+            <button class="entrega-btn" data-id="{{ obra[0] }}">Obra Entregue</button>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>Não há obras em andamento.</p>
+{% endif %}
 
-    <h2>Controle de Ponto dos Funcionários</h2>
-    <form action="/ponto" method="GET">
-        <button type="submit">Acessar Ponto</button>
-    </form>
-    -->
     <hr>
 
     <h2>Registro de Auditoria</h2>
@@ -53,5 +86,7 @@
         <li>{{ data_hora.strftime('%d/%m/%Y %H:%M') }} - {{ mensagem }}</li>
     {% endfor %}
     </ul>
+    <script src="{{ url_for('static', filename='js/mudanca_status_orc.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/obra_entregue.js') }}"></script>
 </body>
 </html>

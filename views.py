@@ -1,27 +1,55 @@
 from app import app
-from flask import render_template, request, redirect, flash, get_flashed_messages
+from flask import render_template, request, redirect, flash, get_flashed_messages, jsonify
 from database import connect_db
 from viacep import gerador_endereco
+from workalendar.america import Brazil
+from datetime import datetime
 
 @app.route("/")
 def homepage():
     conn = connect_db()
     cur = conn.cursor()
 
+    #Cliente com status Aberto
     cur.execute("""
-        SELECT id_orcamento, nome_cliente, valor, data
+        SELECT id_orcamento, nome_cliente, valor, data, telefone
         FROM orcamento
         WHERE status_cliente = 'Aberto'
         ORDER BY data DESC
     """)
     orcamentos_abertos = cur.fetchall()
+
+    #Coleta de dados para orcamentos abertos e nao finalizados
+    cur.execute("""
+        SELECT id_orcamento, nome_cliente, data, valor
+        FROM orcamento
+        WHERE status_cliente = 'Fechado' AND obra_entregue = False
+        ORDER BY data DESC
+    """)
+
+    obras = []
+    cal = Brazil()
+    for row in cur.fetchall():
+        id_obra, nome_cliente, data_fechamento, valor = row
+        data_entrega = cal.add_working_days(data_fechamento, 30)
+        dias_restantes = cal.get_working_days_delta(datetime.now().date(), data_entrega)
+        
+        obras.append((
+            id_obra,
+            nome_cliente,
+            data_fechamento,
+            float(valor),
+            data_entrega,
+            dias_restantes
+        ))   
     
+    #Registro de Auditoria 
     cur.execute("""SELECT data_hora, mensagem FROM auditoria ORDER BY data_hora DESC LIMIT 10""")
     registro_auditoria = cur.fetchall()
 
     cur.close()
     conn.close()
-    return render_template("homepage.html",orcamentos = orcamentos_abertos, registro_auditoria=registro_auditoria)
+    return render_template("homepage.html",orcamentos = orcamentos_abertos, obras=obras, registro_auditoria=registro_auditoria)
 
 @app.route('/selecionar_tabela', methods=['POST'])
 def selecionar_tabela():
@@ -32,6 +60,98 @@ def selecionar_tabela():
         return redirect('/funcionario')  
     else:
         return "Tabela inválida", 400
+
+@app.route("/entregar_obra", methods=["POST"])
+def entregar_obra():
+    data = request.get_json()
+    id_obra = data.get("id_obra")
+
+    if not id_obra:
+        return jsonify(success=False, message="ID da obra não fornecido"), 400
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            UPDATE orcamento
+            SET obra_entregue = TRUE
+            WHERE id_orcamento = %s
+        """, (id_obra,))
+        
+        cur.execute("INSERT INTO auditoria (mensagem) VALUES (%s)", (
+            f"Obra com ID {id_obra} marcada como entregue.",))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 500
+    
+@app.route("/mudar_status_ajax", methods=["POST"])
+def mudar_status_ajax():
+    data = request.get_json()
+    id_orcamento = data.get("id_orcamento")
+    novo_status = data.get("novo_status")
+
+    if not id_orcamento or novo_status not in ['Fechado', 'Negado']:
+        return jsonify(success=False, message="Dados inválidos"), 400
+
+    conn = None
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        # Coleta de dados completos do orçamento
+        cur.execute("""
+            SELECT nome_cliente, cpf_cnpj, cep, telefone, endereco 
+            FROM orcamento 
+            WHERE id_orcamento = %s
+        """, (id_orcamento,))
+        orcamento = cur.fetchone()
+
+        if not orcamento:
+            return jsonify(success=False, message="Orçamento não encontrado"), 404
+
+        # Atualizar status
+        cur.execute(
+            "UPDATE orcamento SET status_cliente = %s WHERE id_orcamento = %s",
+            (novo_status, id_orcamento)
+        )
+
+        # Cadastro do cliente caso Feche o orcamento
+        if novo_status == 'Fechado':
+            nome_cliente, cpf_cnpj, cep, telefone, endereco = orcamento
+            
+            # Verificação mais robusta de cliente existente
+            cur.execute("SELECT 1 FROM cliente WHERE cpf_cnpj = %s LIMIT 1", (cpf_cnpj,))
+            if not cur.fetchone():
+                cur.execute("""
+                    INSERT INTO cliente 
+                    (nome_cliente, cpf_cnpj, cep, telefone, endereco)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (nome_cliente, cpf_cnpj, cep, telefone, endereco))
+                
+                # Registrar na auditoria
+                cur.execute("""
+                    INSERT INTO auditoria (mensagem)
+                    VALUES (%s)
+                """, (f"Cliente {nome_cliente} cadastrado via atualização de status",))
+
+        conn.commit()
+        return jsonify(
+            success=True,
+            message=f"Status atualizado para {novo_status}" + 
+                   (" e cliente cadastrado" if novo_status == 'Fechado' else "")
+        )
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify(success=False, message="Erro interno ao processar"), 500
+    finally:
+        if conn:
+            conn.close()
 
 #Pagina registro Orcamento
 @app.route('/orcamento', methods=['GET', 'POST'])
@@ -48,7 +168,6 @@ def orcamento():
         forma_pagamento = request.form['forma_pagamento'].strip().capitalize()
         data = request.form['data'].strip()
         cliente_novo = request.form['cliente_novo'].lower() == 'true'
-        salvar_cliente = request.form['salvar_cliente'].lower() == 'true'
         endereco = gerador_endereco(cep)
 
         #Conecta ao Bd
@@ -78,7 +197,7 @@ def orcamento():
         flash("✅ Orçamento registrado com sucesso!","success")
         
         
-        if salvar_cliente == True:
+        if status_cliente == 'Fechado':
             #Add Cliente 
             cur.execute("SELECT * FROM cliente WHERE cpf_cnpj = %s", (cpf_cnpj,))
             cliente_existente = cur.fetchone()
@@ -101,38 +220,7 @@ def orcamento():
         return redirect('/aviso')
 
     return render_template('orcamento.html')
-'''
-#Pagina registro Funcionario
-@app.route("/funcionario", methods=['GET', 'POST'])
-def funcionario():
-    if request.method == 'POST':
-        #Coletar os dados do formulário
-        nome_funcionario = request.form['nome_funcionario']
-        cpf = request.form['cpf']
-        salario = request.form['salario']
-        n_faltas = request.form['n_faltas']
 
-        #Conecta ao Bd
-        conn = connect_db()
-        cur = conn.cursor()
-
-        #Add valores ao Bd
-        cur.execute("""INSERT INTO funcionario(
-                nome_funcionario, cpf, salario, n_faltas
-        )
-            VALUES (%s, %s, %s, %s)""",(
-                nome_funcionario, cpf, salario,n_faltas))
-
-        conn.commit()
-
-        #Fechando Bd
-        cur.close()
-        conn.close()
-        
-        return redirect('/')
-    
-    return render_template("funcionario.html")
-'''
 #Pagina do aviso
 @app.route("/aviso")
 def aviso():

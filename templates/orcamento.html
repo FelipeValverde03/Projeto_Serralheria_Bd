@@ -74,13 +74,13 @@
             <option value="false">Não</option>
         </select><br><br>
 
-        <!-- Salvar como cliente -->
-        <label for="salvar_cliente">Deseja Salvar o Cliente</label>
-        <select name="salvar_cliente" id="salvar_cliente" required>
-            <option value="true">Sim</option>
+        <!-- Obra entregue-->
+        <label for="obra_entregue">Obra entregue?</label>
+        <select name="obra_entregue" id="obra_entregue" required>
             <option value="false">Não</option>
+            <option value="true">Sim</option>
         </select><br><br>
-
+        
         <button type="submit">Registrar Orçamento</button>
     </form>
     <script type="module" src="{{ url_for('static', filename='js/validate_doc.js') }}"></script>
