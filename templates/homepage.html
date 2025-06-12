@@ -61,13 +61,13 @@
             <strong>Valor:</strong> R$ {{ "%.2f"|format(obra[3])|replace(".", ",") }} |
             <strong>Data Fechamento:</strong> {{ obra[2].strftime('%d/%m/%Y') }} |
             <strong>Entrega estimada:</strong> 
-            {{ obra[4].strftime('%d/%m/%Y') }} | <!-- Data de entrega calculada no backend -->
+            {{ obra[4].strftime('%d/%m/%Y') }} | 
             <strong>Dias restantes:</strong>
             <span class="{{ 'atrasado' if obra[5] < 0 else '' }}">
                 {% if obra[5] < 0 %}
-                    Atrasado: {{ -obra[5] }} dias
+                    Atrasado: {{ -obra[5] }} dias uteis
                 {% else %}
-                    {{ obra[5] }} dias
+                    {{ obra[5] }} dias uteis
                 {% endif %}
             </span>
             <button class="entrega-btn" data-id="{{ obra[0] }}">Obra Entregue</button>

@@ -21,7 +21,7 @@ def homepage():
 
     #Coleta de dados para orcamentos abertos e nao finalizados
     cur.execute("""
-        SELECT id_orcamento, nome_cliente, data, valor
+        SELECT id_orcamento, nome_cliente, data, valor, dias_uteis
         FROM orcamento
         WHERE status_cliente = 'Fechado' AND obra_entregue = False
         ORDER BY data DESC
@@ -30,8 +30,8 @@ def homepage():
     obras = []
     cal = Brazil()
     for row in cur.fetchall():
-        id_obra, nome_cliente, data_fechamento, valor = row
-        data_entrega = cal.add_working_days(data_fechamento, 30)
+        id_obra, nome_cliente, data_fechamento, valor, dias_uteis = row
+        data_entrega = cal.add_working_days(data_fechamento, int(dias_uteis))
         dias_restantes = cal.get_working_days_delta(datetime.now().date(), data_entrega)
         
         obras.append((
@@ -115,10 +115,17 @@ def mudar_status_ajax():
             return jsonify(success=False, message="Orçamento não encontrado"), 404
 
         # Atualizar status
-        cur.execute(
-            "UPDATE orcamento SET status_cliente = %s WHERE id_orcamento = %s",
-            (novo_status, id_orcamento)
-        )
+        
+        if novo_status == "Fechado":
+            cur.execute(
+                "UPDATE orcamento SET status_cliente = %s, data = %s WHERE id_orcamento = %s",
+                (novo_status, datetime.now(), id_orcamento)
+            )
+        else:
+            cur.execute(
+                "UPDATE orcamento SET status_cliente = %s WHERE id_orcamento = %s",
+                (novo_status, id_orcamento)
+            )
 
         # Cadastro do cliente caso Feche o orcamento
         if novo_status == 'Fechado':
@@ -169,6 +176,8 @@ def orcamento():
         data = request.form['data'].strip()
         cliente_novo = request.form['cliente_novo'].lower() == 'true'
         endereco = gerador_endereco(cep)
+        dias_uteis = request.form['dias_uteis'].strip()
+        obra_entregue = request.form['obra_entregue'].lower() == 'true'
 
         #Conecta ao Bd
         conn = connect_db()
@@ -187,11 +196,11 @@ def orcamento():
         #Add valores ao Bd Orcamentos
         cur.execute("""INSERT INTO orcamento(
                 nome_cliente, cpf_cnpj, cep, telefone,
-                status_cliente, valor, forma_pagamento, data, cliente_novo, endereco
+                status_cliente, valor, forma_pagamento, data, cliente_novo, endereco, obra_entregue, dias_uteis
         )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",(
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",(
                 nome_cliente, cpf_cnpj, cep, telefone,
-                status_cliente, valor, forma_pagamento, data, cliente_novo, endereco))
+                status_cliente, valor, forma_pagamento, data, cliente_novo, endereco, obra_entregue, dias_uteis))
 
         conn.commit()
         flash("✅ Orçamento registrado com sucesso!","success")
